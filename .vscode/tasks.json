@@ -3,11 +3,9 @@
   "tasks": [
     {
       "type": "shell",
-      "label": "clang++ build active file",
-      "command": "/usr/bin/clang++",
+      "label": "clang build active file",
+      "command": "/usr/bin/clang",
       "args": [
-        "-std=c++17",
-        "-stdlib=libc++",
         "-g",
 				"${workspaceFolder}/*.c",
         "-o",
