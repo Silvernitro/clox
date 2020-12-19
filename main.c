@@ -14,7 +14,8 @@ int main(int argc, const char **argv) {
   writeChunk(&chunk, constant, 1);
 
   writeChunk(&chunk, OP_RETURN, 1);
-  disassembleChunk(&chunk, "test");
+  // disassembleChunk(&chunk, "test");
+  interpret(&chunk);
 
   freeVM();
   freeChunk(&chunk);
