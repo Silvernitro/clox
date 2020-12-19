@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "chunk.h"
+#include "debug.h"
 
 VM vm;
 
@@ -22,6 +23,10 @@ static InterpretResult run() {
 
   for (;;) {
     uint8_t instruction = READ_BYTE();
+
+#ifdef DEBUG_TRACE_EXECUTION
+    disassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
+#endif
 
     switch (instruction) {
       case OP_CONSTANT:
