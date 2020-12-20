@@ -7,7 +7,20 @@
 #include "debug.h"
 #include "vm.h"
 
-static void repl() {}
+static void repl() {
+  char line[1024];
+
+  for (;;) {
+    printf("> ");
+
+    if (!fgets(line, sizeof(line), stdin)) {
+      print("\n");
+      break;
+    }
+
+    interpret(line);
+  }
+}
 
 static char *readFile(const char *path) {
   FILE *file = fopen(path, "rb");
