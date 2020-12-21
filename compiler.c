@@ -5,4 +5,22 @@
 #include "common.h"
 #include "scanner.h"
 
-void compile(const char* source) { initScanner(source); }
+void compile(const char* source) {
+  initScanner(source);
+
+  int line = -1;
+  for (;;) {
+    Token token = scanToken();
+
+    if (line != token.line) {
+      printf("%4d ", token.line);
+      line = token.line;
+    } else {
+      printf("   | ");
+    }
+
+    printf("%2d %.*s", token.type, token.length, token.start);
+
+    if (token.type == TOKEN_EOF) break;
+  }
+}
