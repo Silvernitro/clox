@@ -20,6 +20,13 @@ static bool isAtEnd() { return *scanner.current == "\0"; }
 
 static char advance() { return *scanner.current++; }
 
+static char peek() { return *scanner.current; }
+
+static char peekNext() {
+  if (isAtEnd()) return '\0';
+  return scanner.current[1];
+}
+
 static bool match(char expected) {
   if (isAtEnd()) return false;
   if (*scanner.current != expected) return false;
@@ -50,7 +57,40 @@ static Token errorToken(const char* msg) {
   return token;
 }
 
+static void skipWhitespace() {
+  for (;;) {
+    char c = peek();
+
+    switch (c) {
+      case ' ':
+      case '\r':
+      case '\t':
+        advance();
+        break;
+      case '\n':
+        advance();
+        scanner.line++;
+        break;
+
+      case '/':
+        if (peekNext() == '/') {
+          while (peek() != '\n' && !isAtEnd()) {
+            advance();
+          }
+        } else {
+          return;
+        }
+        break;
+
+      default:
+        return;
+    }
+  }
+}
+
 Token scanToken() {
+  // ensure that we are always at a meaningful token
+  skipWhitespace();
   scanner.start = scanner.current;
 
   if (isAtEnd()) {
