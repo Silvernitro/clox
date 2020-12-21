@@ -1,5 +1,7 @@
 #include "scanner.h"
 
+#include <string.h>
+
 #include "common.h"
 
 typedef struct {
@@ -17,7 +19,7 @@ void initScanner(const char* source) {
 }
 
 //-------- START SCANNER NAVIGATOR UTILS -----------//
-static bool isAtEnd() { return *scanner.current == "\0"; }
+static bool isAtEnd() { return *scanner.current == '\0'; }
 
 static char advance() { return *scanner.current++; }
 
@@ -95,7 +97,7 @@ static void skipWhitespace() {
 
 static Token string() {
   while (peek() != '"' && !isAtEnd()) {
-    if (peek() == "\n") scanner.line++;
+    if (peek() == '\n') scanner.line++;
     advance();
   }
 
@@ -124,6 +126,85 @@ static Token number() {
 
   return makeToken(TOKEN_NUMBER);
 }
+
+static bool isAlpha(char c) {
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+}
+
+static TokenType checkKeyword(int start, int length, const char* rest,
+                              TokenType type) {
+  // lexeme = scanner.start --- start --- start + length (scanner.current)
+  bool isCorrectLength = scanner.current - scanner.start == start + length;
+  bool areCharsMatched = memcmp(scanner.start + start, rest, length) == 0;
+
+  if (isCorrectLength && areCharsMatched) return type;
+
+  return TOKEN_IDENTIFIER;
+}
+
+static TokenType identifierType() {
+  switch (scanner.current[0]) {
+    case 'a':
+      return checkKeyword(1, 2, "nd", TOKEN_AND);
+    case 'c':
+      return checkKeyword(1, 4, "lass", TOKEN_CLASS);
+    case 'e':
+      return checkKeyword(1, 3, "lse", TOKEN_ELSE);
+    case 'i':
+      return checkKeyword(1, 1, "f", TOKEN_IF);
+    case 'n':
+      return checkKeyword(1, 2, "il", TOKEN_NIL);
+    case 'o':
+      return checkKeyword(1, 1, "r", TOKEN_OR);
+    case 'p':
+      return checkKeyword(1, 4, "rint", TOKEN_PRINT);
+    case 'r':
+      return checkKeyword(1, 5, "eturn", TOKEN_RETURN);
+    case 's':
+      return checkKeyword(1, 4, "uper", TOKEN_SUPER);
+    case 'v':
+      return checkKeyword(1, 2, "ar", TOKEN_VAR);
+    case 'w':
+      return checkKeyword(1, 4, "hile", TOKEN_WHILE);
+    case 'f':
+      // match 2nd char in trie branch (if exists)
+      if (scanner.current - scanner.start > 1) {
+        switch (scanner.start[1]) {
+          case 'a':
+            return checkKeyword(2, 3, "lse", TOKEN_FALSE);
+          case 'o':
+            return checkKeyword(2, 1, "r", TOKEN_FOR);
+          case 'u':
+            return checkKeyword(2, 1, "n", TOKEN_FUN);
+        }
+      }
+      // fall-through : 'f' is a valid identifier
+      break;
+    case 't':
+      if (scanner.current - scanner.start > 1) {
+        switch (scanner.start[1]) {
+          case 'h':
+            return checkKeyword(2, 2, "is", TOKEN_THIS);
+          case 'r':
+            return checkKeyword(2, 2, "e", TOKEN_TRUE);
+        }
+      }
+      // fall-through : 't' is a valid identifier
+      break;
+  }
+
+  return TOKEN_IDENTIFIER;
+}
+
+static Token identifier() {
+  // note: after the 1st alphanum char, other chars can be digits
+  while (isAlpha(peek()) || isDigit(peek())) {
+    advance();
+  }
+
+  return makeToken(identifierType());
+}
+
 //-------- END SCANNING UTILS --------//
 
 Token scanToken() {
@@ -137,6 +218,7 @@ Token scanToken() {
 
   char c = advance();
 
+  if (isAlpha(c)) return identifier();
   if (isDigit(c)) return number();
 
   switch (c) {

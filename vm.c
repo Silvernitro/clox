@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "chunk.h"
+#include "compiler.h"
 #include "debug.h"
 
 VM vm;
