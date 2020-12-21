@@ -16,6 +16,7 @@ void initScanner(const char* source) {
   scanner.line = 1;
 }
 
+//-------- START SCANNER NAVIGATOR UTILS -----------//
 static bool isAtEnd() { return *scanner.current == "\0"; }
 
 static char advance() { return *scanner.current++; }
@@ -34,7 +35,9 @@ static bool match(char expected) {
   scanner.current++;
   return true;
 }
+//-------- END SCANNER NAVIGATOR UTILS -----------//
 
+//-------- START TOKEN UTILS ----------//
 static Token makeToken(TokenType type) {
   Token token;
 
@@ -56,7 +59,9 @@ static Token errorToken(const char* msg) {
 
   return token;
 }
+//-------- END TOKEN UTILS ----------//
 
+//-------- START SCANNING UTILS --------//
 static void skipWhitespace() {
   for (;;) {
     char c = peek();
@@ -88,6 +93,39 @@ static void skipWhitespace() {
   }
 }
 
+static Token string() {
+  while (peek() != '"' && !isAtEnd()) {
+    if (peek() == "\n") scanner.line++;
+    advance();
+  }
+
+  if (isAtEnd()) return errorToken("Unterminated string.");
+
+  // consume the closing quote
+  advance();
+  return makeToken(TOKEN_STRING);
+}
+
+static bool isDigit(char c) { return c >= '0' && c <= '9'; }
+
+static Token number() {
+  while (isDigit(peek())) {
+    advance();
+  }
+
+  if (peek() == '.' && isDigit(peekNext())) {
+    // consume decimal point '.'
+    advance();
+
+    while (isDigit(peek())) {
+      advance();
+    }
+  }
+
+  return makeToken(TOKEN_NUMBER);
+}
+//-------- END SCANNING UTILS --------//
+
 Token scanToken() {
   // ensure that we are always at a meaningful token
   skipWhitespace();
@@ -98,6 +136,8 @@ Token scanToken() {
   }
 
   char c = advance();
+
+  if (isDigit(c)) return number();
 
   switch (c) {
     case '(':
@@ -131,6 +171,8 @@ Token scanToken() {
                         : makeToken(TOKEN_GREATER);
     case '<':
       return match('=') ? makeToken(TOKEN_LESS_EQUAL) : makeToken(TOKEN_LESS);
+    case '"':
+      return string();
   }
 
   return errorToken("Unexpected character.");
