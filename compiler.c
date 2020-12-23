@@ -84,6 +84,34 @@ static void endCompile() {
   // TODO: Currently manually adds a return stmt to print things
   emitReturn();
 }
+
+static void expression() {}
+
+static uint8_t makeConstant(Value value) {
+  int constantIndex = addConstant(currentChunk(), value);
+
+  if (constantIndex > UINT8_MAX) {
+    error("Too many constants in one chunk.");
+    return 0;
+  }
+
+  return (uint8_t)constantIndex;
+}
+
+static void emitConstant(Value value) {
+  emitBytes(OP_CONSTANT, makeConstant(value));
+}
+
+static void number() {
+  double value = strtod(parser.previous.start, NULL);
+  emitConstant(value);
+}
+
+static void grouping() {
+  expression();
+  consume(TOKEN_RIGHT_PAREN, "Expect ')' after paraenthesized expression.");
+}
+
 //---------- END PARSING UTILS -----------//
 
 bool compile(const char* source, Chunk* chunk) {
