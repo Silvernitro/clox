@@ -110,7 +110,22 @@ static void endCompile() {
 // forward declarations: implementation comes after rules table
 static void expression();
 static ParseRule* getRule(TokenType type);
-static void parsePrecedence(Precedence precedence);
+
+static void parsePrecedence(Precedence precedence) {
+  advance();
+  ParseFn prefixRule = getRule(parser.previous.type)->prefix;
+  if (prefixRule == NULL) {
+    error("Expect expression.");
+  }
+  prefixRule();
+
+  // only continue if there's a higher precedence expr ahead
+  while (precedence <= getRule(parser.current.type)->precedence) {
+    advance();
+    ParseFn infixRule = getRule(parser.previous.type)->infix;
+    infixRule();
+  }
+}
 
 static void binary() {
   TokenType operatorType = parser.previous.type;
