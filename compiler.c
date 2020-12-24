@@ -8,6 +8,10 @@
 #include "scanner.h"
 #include "vm.h"
 
+#ifdef DEBUG_PRINT_CODE
+#include "debug.h"
+#endif
+
 typedef struct {
   Token previous;
   Token current;
@@ -105,6 +109,12 @@ static void emitReturn() { emitByte(OP_RETURN); }
 static void endCompile() {
   // TODO: Currently manually adds a return stmt to print things
   emitReturn();
+
+#ifdef DEBUG_PRINT_CODE
+  if (!parser.hadError) {
+    disassembleChunk(currentChunk(), "code");
+  }
+#endif
 }
 
 // forward declarations: implementation comes after rules table
