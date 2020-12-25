@@ -1,5 +1,6 @@
 #include "vm.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 
 #include "chunk.h"
@@ -9,6 +10,22 @@
 VM vm;
 
 static void resetStack() { vm.stackTop = vm.stack; }
+
+static void runtimeError(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  vfprintf(stderr, format, args);
+  va_end(args);
+  fputs("\n", stderr);
+
+  // note: VM consumes the token before it throws a
+  // runtime error, hence the "-1" to get the prev inst
+  size_t instruction = vm.ip - vm.chunk->code - 1;
+  int line = vm.chunk->lines[instruction];
+  fprintf(stderr, "[line %d] in script\n", line);
+
+  resetStack();
+}
 
 static InterpretResult run() {
 #define READ_BYTE() (*vm.ip++)
@@ -43,7 +60,13 @@ static InterpretResult run() {
         break;
       }
       case OP_NEGATE:
-        push(-pop());
+        if (!IS_NUMBER(peek(0))) {
+          runtimeError("");
+          return INTERPRET_RUNTIME_ERROR;
+        }
+
+        double numberValue = AS_NUMBER(pop());
+        push(NUMBER_VAL(-numberValue));
         break;
 
       case OP_ADD:
@@ -106,3 +129,5 @@ Value pop() {
   vm.stackTop--;
   return *vm.stackTop;
 }
+
+static Value peek(int distance) { return vm.stackTop[-1 - distance]; }
