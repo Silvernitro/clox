@@ -14,7 +14,7 @@ typedef struct {
 } Value;
 
 //----- VALUE CONSTRUCTORS -------//
-#define BOOL_VAL(value) ((Value){VAL_BOOL, {.boolean = true}})
+#define BOOL_VAL(value) ((Value){VAL_BOOL, {.boolean = (value)}})
 #define NIL_VAL() ((Value){VAL_NIL, {.number = 0}})
 #define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = (value)}})
 
