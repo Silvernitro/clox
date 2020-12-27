@@ -81,6 +81,18 @@ static InterpretResult run() {
       case OP_NOT:
         push(BOOL_VAL(isFalsey(pop())));
         break;
+      case OP_EQUAL: {
+        Value right = pop();
+        Value left = pop();
+        push(BOOL_VAL(areValuesEqual(left, right)));
+        break;
+      }
+      case OP_GREATER:
+        BINARY_OP(BOOL_VAL, >);
+        break;
+      case OP_LESS:
+        BINARY_OP(BOOL_VAL, <);
+        break;
       case OP_NEGATE:
         if (!IS_NUMBER(peek(0))) {
           runtimeError("Operand must be a number.");
