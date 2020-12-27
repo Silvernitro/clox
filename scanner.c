@@ -143,7 +143,7 @@ static TokenType checkKeyword(int start, int length, const char* rest,
 }
 
 static TokenType identifierType() {
-  switch (scanner.current[0]) {
+  switch (scanner.start[0]) {
     case 'a':
       return checkKeyword(1, 2, "nd", TOKEN_AND);
     case 'c':
@@ -186,7 +186,7 @@ static TokenType identifierType() {
           case 'h':
             return checkKeyword(2, 2, "is", TOKEN_THIS);
           case 'r':
-            return checkKeyword(2, 2, "e", TOKEN_TRUE);
+            return checkKeyword(2, 2, "ue", TOKEN_TRUE);
         }
       }
       // fall-through : 't' is a valid identifier
