@@ -16,12 +16,17 @@ static Obj* allocateObject(size_t size, ObjType type) {
   return object;
 }
 
-ObjString* allocateString(char* string, int length) {
+static ObjString* allocateString(char* string, int length) {
   ObjString* stringObj = ALLOCATE_OBJ(ObjString, OBJ_STRING);
   stringObj->chars = string;
   stringObj->length = length;
 
   return stringObj;
+}
+
+// public interface for allocateString
+ObjString* takeString(char* string, int length) {
+  return allocateString(string, length);
 }
 
 ObjString* copyString(const char* string, int length) {

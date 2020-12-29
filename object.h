@@ -18,7 +18,11 @@ struct ObjString {
   char* chars;
 };
 
+// creates a ObjString directly from a given string
+ObjString* takeString(char* string, int length);
+// creates a ObjString by copying the given string first
 ObjString* copyString(const char* string, int length);
+
 void printObject(Value value);
 
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
