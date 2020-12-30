@@ -2,10 +2,13 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "chunk.h"
 #include "compiler.h"
 #include "debug.h"
+#include "memory.h"
+#include "object.h"
 
 VM vm;
 
@@ -15,6 +18,21 @@ static Value peek(int distance) { return vm.stackTop[-1 - distance]; }
 
 static bool isFalsey(Value value) {
   return IS_NIL(value) || (IS_BOOL(value) && !AS_BOOL(value));
+}
+
+static void concatenate() {
+  ObjString* stringB = AS_STRING(pop());
+  ObjString* stringA = AS_STRING(pop());
+
+  // copy A then B into a newly allocated piece of memory
+  int totalLength = stringA->length + stringB->length;
+  char* chars = ALLOCATE(char, totalLength + 1);
+  memcpy(chars, stringA->chars, stringA->length);
+  memcpy(chars + stringA->length, stringB->chars, stringB->length);
+  chars[totalLength] = '\0';
+
+  ObjString* newStringObj = takeString(chars, totalLength);
+  push(OBJ_VAL(newStringObj));
 }
 
 static void runtimeError(const char* format, ...) {
@@ -104,7 +122,16 @@ static InterpretResult run() {
         break;
 
       case OP_ADD:
-        BINARY_OP(NUMBER_VAL, +);
+        if (IS_STRING(peek(0)) && IS_STRING(peek(1))) {
+          concatenate();
+        } else if (IS_NUMBER(peek(0)) && IS_NUMBER(peek(1))) {
+          double right = AS_NUMBER(pop());
+          double left = AS_NUMBER(pop());
+          push(NUMBER_VAL(left + right));
+        } else {
+          runtimeError("Operands must be 2 numbers or 2 strings.");
+          return INTERPRET_RUNTIME_ERROR;
+        }
         break;
 
       case OP_SUBTRACT:
@@ -132,9 +159,12 @@ static InterpretResult run() {
 #undef BINARY_OP
 }
 
-void initVM() { resetStack(); }
+void initVM() {
+  resetStack();
+  vm.objects = NULL;
+}
 
-void freeVM() {}
+void freeVM() { freeObjects(); }
 
 InterpretResult interpret(const char* source) {
   Chunk chunk;
