@@ -67,6 +67,20 @@ bool tableSet(Table* table, ObjString* key, Value value) {
   return isNewKey;
 }
 
+// stores the found value in a given value pointer
+bool tableGet(Table* table, ObjString* key, Value* value) {
+  if (table->count == 0) return false;
+
+  Entry* entry = findEntry(table->entries, table->capacity, key);
+  bool isEntryFound = entry->key != NULL;
+
+  if (isEntryFound) {
+    *value = entry->value;
+  }
+
+  return isEntryFound;
+}
+
 void tableAddAll(Table* fromTable, Table* toTable) {
   for (int i = 0; i < fromTable->capacity; i++) {
     Entry* entry = &fromTable->entries[i];
