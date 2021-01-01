@@ -1,5 +1,7 @@
 #include "table.h"
 
+#include <string.h>
+
 #include "memory.h"
 #include "object.h"
 #include "value.h"
@@ -67,6 +69,7 @@ static void adjustCapacity(Table* table, int capacity) {
 bool tableSet(Table* table, ObjString* key, Value value) {
   if (table->count + 1 > table->capacity * TABLE_MAX_LOAD) {
     int newCapacity = GROW_CAPACITY(table->capacity);
+    adjustCapacity(table, newCapacity);
   }
 
   Entry* entry = findEntry(table->entries, table->capacity, key);
@@ -114,5 +117,25 @@ void tableAddAll(Table* fromTable, Table* toTable) {
     if (entry->key != NULL) {
       tableSet(toTable, entry->key, entry->value);
     }
+  }
+}
+
+ObjString* tableFindString(Table* table, const char* chars, int length,
+                           uint32_t hash) {
+  if (table->count == 0) return NULL;
+
+  uint32_t index = hash % table->capacity;
+
+  for (;;) {
+    Entry* entry = &table->entries[index];
+
+    if (entry->key == NULL && IS_NIL(entry->value)) {
+      return NULL;
+    } else if (entry->key->length == length && entry->key->hash == hash &&
+               memcmp(entry->key->chars, chars, length) == 0) {
+      return entry->key;
+    }
+
+    index = (index + 1) % table->capacity;
   }
 }

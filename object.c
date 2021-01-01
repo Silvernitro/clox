@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "memory.h"
+#include "table.h"
 #include "value.h"
 #include "vm.h"
 
@@ -24,6 +25,7 @@ static ObjString* allocateString(char* string, int length, uint32_t hash) {
   stringObj->length = length;
   stringObj->hash = hash;
 
+  tableSet(&vm.strings, stringObj, NIL_VAL());
   return stringObj;
 }
 
@@ -41,14 +43,28 @@ static uint32_t hashString(const char* key, int length) {
 // public interface for allocateString
 ObjString* takeString(char* string, int length) {
   uint32_t hash = hashString(string, length);
+
+  ObjString* internedString =
+      tableFindString(&vm.strings, string, length, hash);
+  if (internedString != NULL) {
+    // free the original string since we don't need it anymore
+    FREE_ARRAY(char, string, length + 1);
+    return internedString;
+  }
+
   return allocateString(string, length, hash);
 }
 
 ObjString* copyString(const char* string, int length) {
+  uint32_t hash = hashString(string, length);
+
+  ObjString* internedString =
+      tableFindString(&vm.strings, string, length, hash);
+  if (internedString != NULL) return internedString;
+
   char* heapChars = ALLOCATE(char, length + 1);
   memcpy(heapChars, string, length);
   heapChars[length] = '\0';
-  uint32_t hash = hashString(string, length);
 
   return allocateString(heapChars, length, hash);
 }
