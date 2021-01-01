@@ -17,11 +17,21 @@ void freeTable(Table* table) {
 
 static Entry* findEntry(Entry* entries, int capacity, ObjString* key) {
   uint32_t index = key->hash % capacity;
+  Entry* tombstone = NULL;
 
   for (;;) {
     Entry* entry = &entries[index];
+    // Current tombstone definition: NULL key and non-nil value
+    bool isTombstone = entry->key == NULL && !IS_NIL(entry->value);
 
-    if (entry->key == NULL || entry->key == key) {
+    if (tombstone == NULL && isTombstone) {
+      tombstone = entry;
+    } else if (entry->key == NULL) {
+      // reached an empty bucket
+      return tombstone == NULL ? entry : tombstone;
+    }
+
+    if (entry->key == key) {
       return entry;
     }
 
@@ -36,6 +46,9 @@ static void adjustCapacity(Table* table, int capacity) {
     entries[i].value = NIL_VAL();
   }
 
+  // reset table count to exclude tombstones
+  table->count = 0;
+
   for (int i = 0; i < table->capacity; i++) {
     Entry* entry = &table->entries[i];
     if (entry->key == NULL) continue;
@@ -43,6 +56,7 @@ static void adjustCapacity(Table* table, int capacity) {
     Entry* newEntry = findEntry(entries, capacity, entry->key);
     newEntry->key = entry->key;
     newEntry->value = entry->value;
+    table->count++;
   }
 
   FREE_ARRAY(Entry, table->entries, table->capacity);
@@ -58,13 +72,26 @@ bool tableSet(Table* table, ObjString* key, Value value) {
   Entry* entry = findEntry(table->entries, table->capacity, key);
 
   bool isNewKey = entry->key == NULL;
-  if (isNewKey) {
+  // only increment count if not tombstone
+  if (isNewKey && IS_NIL(entry->value)) {
     table->count++;
   }
 
   entry->key = key;
   entry->value = value;
   return isNewKey;
+}
+
+bool tableDelete(Table* table, ObjString* key) {
+  if (table->count == 0) return false;
+
+  Entry* entry = findEntry(table->entries, table->capacity, key);
+  if (entry->key == NULL) return false;
+
+  entry->key = NULL;
+  // set tombstone value
+  entry->value = BOOL_VAL(true);
+  return true;
 }
 
 // stores the found value in a given value pointer
