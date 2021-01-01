@@ -9,6 +9,7 @@
 #include "debug.h"
 #include "memory.h"
 #include "object.h"
+#include "table.h"
 
 VM vm;
 
@@ -162,9 +163,13 @@ static InterpretResult run() {
 void initVM() {
   resetStack();
   vm.objects = NULL;
+  initTable(&vm.strings);
 }
 
-void freeVM() { freeObjects(); }
+void freeVM() {
+  freeObjects();
+  freeTable(&vm.strings);
+}
 
 InterpretResult interpret(const char* source) {
   Chunk chunk;
