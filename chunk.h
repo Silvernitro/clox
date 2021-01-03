@@ -11,6 +11,7 @@ typedef enum {
   OP_FALSE,
   OP_NEGATE,
   OP_PRINT,
+  OP_POP,
   OP_RETURN,
   OP_ADD,
   OP_SUBTRACT,

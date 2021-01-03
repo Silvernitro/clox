@@ -223,11 +223,20 @@ static void printStatement() {
   emitByte(OP_PRINT);
 }
 
+static void expressionStatement() {
+  expression();
+  consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+  // expresison values do not persist in a stmt
+  emitByte(OP_POP);
+}
+
 static void declaration() { statement(); }
 
 static void statement() {
   if (match(TOKEN_PRINT)) {
     printStatement();
+  } else {
+    expressionStatement();
   }
 }
 
