@@ -230,7 +230,39 @@ static void expressionStatement() {
   emitByte(OP_POP);
 }
 
-static void declaration() { statement(); }
+static void synchronize() {
+  parser.hadError = false;
+
+  while (!check(TOKEN_EOF)) {
+    // we go past a semicolon before terminating
+    if (parser.previous.type == TOKEN_SEMICOLON) return;
+
+    switch (parser.current.type) {
+      case TOKEN_CLASS:
+      case TOKEN_FUN:
+      case TOKEN_VAR:
+      case TOKEN_FOR:
+      case TOKEN_IF:
+      case TOKEN_WHILE:
+      case TOKEN_PRINT:
+      case TOKEN_RETURN:
+        return;
+      default:
+        // nothing
+        ;
+    }
+
+    advance();
+  }
+}
+
+static void declaration() {
+  statement();
+
+  if (parser.hadError) {
+    synchronize();
+  }
+}
 
 static void statement() {
   if (match(TOKEN_PRINT)) {
