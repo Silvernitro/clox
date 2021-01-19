@@ -34,7 +34,7 @@ typedef enum {
   PREC_PRIMARY
 } Precedence;
 
-typedef void (*ParseFn)();
+typedef void (*ParseFn)(bool canAssign);
 
 typedef struct {
   ParseFn prefix;
@@ -142,13 +142,18 @@ static void parsePrecedence(Precedence precedence) {
   if (prefixRule == NULL) {
     error("Expect expression.");
   }
-  prefixRule();
+  bool canAssign = precedence <= PREC_ASSIGNMENT;
+  prefixRule(canAssign);
 
   // only continue if there's a higher precedence expr ahead
   while (precedence <= getRule(parser.current.type)->precedence) {
     advance();
     ParseFn infixRule = getRule(parser.previous.type)->infix;
-    infixRule();
+    infixRule(canAssign);
+  }
+
+  if (canAssign && match(TOKEN_EQUAL)) {
+    error("Invalid assignment target.");
   }
 }
 
@@ -165,7 +170,7 @@ static void defineVariable(uint8_t global) {
   emitBytes(OP_DEFINE_GLOBAL, global);
 }
 
-static void binary() {
+static void binary(bool canAssign) {
   TokenType operatorType = parser.previous.type;
 
   ParseRule* rule = getRule(operatorType);
@@ -210,7 +215,7 @@ static void binary() {
   }
 }
 
-static void literal() {
+static void literal(bool canAssign) {
   switch (parser.previous.type) {
     case TOKEN_NIL:
       emitByte(OP_NIL);
@@ -319,22 +324,23 @@ static void emitConstant(Value value) {
   emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
-static void number() {
+static void number(bool canAssign) {
   double value = strtod(parser.previous.start, NULL);
   emitConstant(NUMBER_VAL(value));
 }
 
-static void string() {
+static void string(bool canAssign) {
   // strip the quotes at the start & end
   emitConstant(OBJ_VAL(
       copyString(parser.previous.start + 1, parser.previous.length - 2)));
 }
 
-static void namedVariable(Token* name) {
+static void namedVariable(Token* name, bool canAssign) {
   uint8_t identifier = identifierConstant(name);
 
-  // if we're at '=' now, then this is an assignment
-  if (match(TOKEN_EQUAL)) {
+  // if we're at '=' now and precedence allows,
+  // then this is an assignment
+  if (canAssign && match(TOKEN_EQUAL)) {
     expression();
     emitBytes(OP_SET_GLOBAL, identifier);
   } else {
@@ -342,14 +348,16 @@ static void namedVariable(Token* name) {
   }
 }
 
-static void variable() { namedVariable(&parser.previous); }
+static void variable(bool canAssign) {
+  namedVariable(&parser.previous, canAssign);
+}
 
-static void grouping() {
+static void grouping(bool canAssign) {
   expression();
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after paraenthesized expression.");
 }
 
-static void unary() {
+static void unary(bool canAssign) {
   TokenType operatorType = parser.previous.type;
 
   // operand is compiled & emitted first
