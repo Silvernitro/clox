@@ -332,7 +332,14 @@ static void string() {
 
 static void namedVariable(Token* name) {
   uint8_t identifier = identifierConstant(name);
-  emitBytes(OP_GET_GLOBAL, identifier);
+
+  // if we're at '=' now, then this is an assignment
+  if (match(TOKEN_EQUAL)) {
+    expression();
+    emitBytes(OP_SET_GLOBAL, identifier);
+  } else {
+    emitBytes(OP_GET_GLOBAL, identifier);
+  }
 }
 
 static void variable() { namedVariable(&parser.previous); }
